@@ -18,6 +18,54 @@
         text-align: center;
         margin-bottom: 5px;
       }
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1;
+        padding-top: 100px;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.4);
+      }
+      .modal-content {
+        background-color: #fefefe;
+        margin: auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        text-align: center;
+      }
+      .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+      }
+      .close:hover,
+      .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      .modal-title {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 20px;
+      }
+      .hex {
+        stroke: #fff;
+        stroke-width: 1.5px;
+      }
+      svg {
+        background-color: #f0f0f0;
+        /* display: none; Hide SVG by default */
+      }
+      /* .visible {
+        display: block; /* Show SVG when this class is added */
+      } */
     </style>
   </head>
   <body>
@@ -26,8 +74,84 @@
     </div>
     <button id="showPopularVotesButton">Popular Vote</button>
     <button id="showDelegatesButton">Delegates</button>
+    <button id="showMapButton">Map</button>
     <div id="chart"></div>
+
+    <div id="pieChartModal" class="modal">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <div class="modal-title">Popular Vote Percentage</div>
+        <svg id="pieChart"></svg>
+      </div>
+    </div>
+
+    <!-- Modal HTML -->
+    <div
+      id="stateModal"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+      "
+    >
+      <div
+        style="
+          position: relative;
+          width: 50%;
+          margin: 15% auto;
+          background: #fff;
+          padding: 20px;
+          border-radius: 10px;
+        "
+      >
+        <span
+          id="closeModal"
+          style="position: absolute; top: 10px; right: 10px; cursor: pointer"
+          >&times;</span
+        >
+        <h2 id="modalTitle">State Information</h2>
+        <p><strong>State:</strong> <span id="modalName"></span></p>
+        <p>
+          <strong>Democratic Popular Votes:</strong>
+          <span id="modalDemocratPopular"></span>
+        </p>
+        <p>
+          <strong>Republican Popular Votes:</strong>
+          <span id="modalRepublicanPopular"></span>
+        </p>
+        <p>
+          <strong>Democratic Electoral Votes:</strong>
+          <span id="modalDemocratElectoral"></span>
+        </p>
+        <p>
+          <strong>Republican Electoral Votes:</strong>
+          <span id="modalRepublicanElectoral"></span>
+        </p>
+      </div>
+    </div>
+
+    <svg width="960" height="600"></svg>
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://d3js.org/topojson.v1.min.js"></script>
+    <script src="https://d3js.org/d3-hexbin.v0.2.min.js"></script>
+    <script src="https://unpkg.com/@turf/turf/turf.min.js"></script>
+
+    <script src="hexmap.js"></script>
     <script src="map.js"></script>
+    <script>
+      document.getElementById("showMapButton").onclick = function () {
+        document.querySelector("svg").classList.add("visible");
+        loadHexMap(); // Call the function to load and display the hex map
+      };
+
+      document.querySelector(".close").onclick = function () {
+        document.getElementById("pieChartModal").style.display = "none";
+      };
+    </script>
   </body>
 </html>

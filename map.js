@@ -58,6 +58,7 @@ d3.json("data.json").then(function (data) {
           type === "popular" ? voteData.republican : delegateData.republican,
         other: type === "popular" ? voteData.other : 0,
         total: type === "popular" ? total : delegateTotal,
+        popular: voteData,
       };
     });
 
@@ -74,11 +75,9 @@ d3.json("data.json").then(function (data) {
       .attr("stroke", "white")
       .call(d3.axisLeft(y).ticks(10).tickSize(-width).tickFormat(""));
 
-    // Set up the stack layout
     const stack = d3.stack().keys(["democrat", "republican", "other"]);
     const stackedData = stack(chartData);
 
-    // Add bars to charts
     svg
       .selectAll("g.layer")
       .data(stackedData)
@@ -112,6 +111,72 @@ d3.json("data.json").then(function (data) {
       //remove label on mouseout
       .on("mouseout", function () {
         tooltip.transition().duration(500).style("opacity", 0);
+      })
+      // Add pie chart functionality for clicking
+      .on("click", function (event, d) {
+        if (type === "delegates") {
+          const modal = document.getElementById("pieChartModal");
+          modal.style.display = "block";
+
+          // Remove existing pie chart if any
+          d3.select("#pieChart").selectAll("*").remove();
+
+          // Data for the pie chart based on popular vote
+          const pieData = [
+            { party: "Democrat", value: d.data.popular.democrat },
+            { party: "Republican", value: d.data.popular.republican },
+            { party: "Other", value: d.data.popular.other },
+          ];
+
+          // Create a pie generator
+          const pie = d3.pie().value((d) => d.value);
+
+          const arc = d3.arc().innerRadius(0).outerRadius(200);
+
+          const pieSvg = d3
+            .select("#pieChart")
+            .attr("width", 400)
+            .attr("height", 400)
+            .append("g")
+            .attr("transform", "translate(200,200)");
+
+          // add pie chart to screen
+          const arcs = pieSvg
+            .selectAll(".arc")
+            .data(pie(pieData))
+            .enter()
+            .append("g")
+            .attr("class", "arc");
+
+          arcs
+            .append("path")
+            .attr("d", arc)
+            .attr("fill", (d) => color(d.data.party.toLowerCase()));
+
+          // handle adding labels to our chart
+          arcs
+            .append("text")
+            .attr("transform", (d) => {
+              const [x, y] = arc.centroid(d);
+              //use this to adjust labels in or out, > = out
+              const offset = 0.9;
+              return `translate(${x * offset}, ${y * offset})`;
+            })
+            //standard values for centering
+            .attr("dy", ".35em")
+            //anchor the text to the centroid of each piece for each arc.
+            .style("text-anchor", (d) => {
+              const [x, y] = arc.centroid(d);
+              return x >= 0 ? "start" : "end";
+            })
+            //append our text.
+            .text(
+              (d) =>
+                `${d.data.party}: ${Math.round(
+                  (d.data.value / d3.sum(pieData, (d) => d.value)) * 100
+                )}%`
+            );
+        }
       });
 
     // Section to add axis to charts
@@ -185,3 +250,11 @@ d3.json("data.json").then(function (data) {
     updateChart("delegates");
   });
 });
+
+// Close modal when clicking outside of it
+window.onclick = function (event) {
+  const modal = document.getElementById("pieChartModal");
+  if (event.target == modal) {
+    modal.style.display = "none";
+  }
+};
