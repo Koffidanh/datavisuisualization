@@ -280,6 +280,13 @@ d3.json("data.json").then(function (data) {
 
     const path = d3.geoPath().projection(projection);
 
+    const svg = d3
+      .select("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", `translate(${margin.left},${margin.top})`);
+
     const stateIdToAbbreviation = {
       0: "AL",
       1: "AK",
@@ -334,19 +341,19 @@ d3.json("data.json").then(function (data) {
       78: "GU",
       16: "DC",
       32: "PR",
-      // 50: "AS",
+      50: "AS",
       22: "MP",
-      // 44: "VI",
+      44: "VI",
     };
 
     d3.json("https://unpkg.com/us-atlas@3/states-10m.json").then((us) => {
       const states = topojson.feature(us, us.objects.states).features;
 
       // Remove everything from the view when we switch views
-      buildChart.selectAll("*").remove();
+      svg.selectAll("*").remove();
 
       // Draw state contours
-      buildChart
+      svg
         .append("g")
         .attr("class", "states")
         .selectAll("path")
@@ -363,96 +370,31 @@ d3.json("data.json").then(function (data) {
           const stateData = data.votes;
           console.log("data: ", stateData);
 
-          stateCenters = states
-            .map((state, index) => {
-              if (!stateIdToAbbreviation.hasOwnProperty(index)) {
-                return null;
-              }
-              const stateAbbr = stateIdToAbbreviation[index];
-              const electoralVotes = stateData[stateAbbr]?.electoral || {};
-              const popularVotes = stateData[stateAbbr]?.popular || {};
-
-              // Check if all votes are zero
-              if (
-                electoralVotes.democrat === 0 &&
-                electoralVotes.republican === 0 &&
-                popularVotes.democrat === 0 &&
-                popularVotes.republican === 0
-              ) {
-                return null;
-              }
-
-              const centroid = path.centroid(state);
-              console.log("state: ", state);
-              console.log("index: ", index);
-              return {
-                id: index,
-                abbr: stateAbbr,
-                centroid: centroid,
-                name: state.properties.name || stateAbbr,
-                geojson: state,
-                electoralVotes: electoralVotes,
-                popularVotes: popularVotes,
-              };
-            })
-            .filter((d) => d !== null); // Filter out null values
-
+          stateCenters = states.map((state, index) => {
+            const stateAbbr = stateIdToAbbreviation[index];
+            const centroid = path.centroid(state);
+            console.log("state: ", state);
+            console.log("index: ", index);
+            return {
+              id: index,
+              abbr: stateAbbr,
+              centroid: centroid,
+              name: state.properties.name || stateAbbr,
+              geojson: state,
+              electoralVotes: stateData[stateAbbr]?.electoral,
+              popularVotes: stateData[stateAbbr]?.popular,
+            };
+          });
           console.log("stateCenters: ", stateCenters);
 
-          // // Draw state names with click event
-          // buildChart
-          //   .selectAll("text")
-          //   .data(stateCenters, (d) => d.abbr)
-          //   .enter()
-          //   .append("text")
-          //   .attr("x", (d) => d.centroid[0])
-          //   .attr("y", (d) => d.centroid[1])
-          //   .attr("text-anchor", "middle")
-          //   .attr("dy", "0.35em")
-          //   .text((d) => d.name)
-          //   .style("font-size", "10px")
-          //   .style("fill", "#000")
-          //   .on("click", function (event, d) {
-          //     // Debugging line to check data in click event
-          //     console.log("Clicked state data:", d);
-
-          //     // Show modal with state information
-          //     document.getElementById("modalName").textContent = d.name;
-          //     document.getElementById("modalDemocratPopular").textContent =
-          //       d.popularVotes.democrat || 0;
-          //     document.getElementById("modalRepublicanPopular").textContent =
-          //       d.popularVotes.republican || 0;
-          //     document.getElementById("modalDemocratElectoral").textContent =
-          //       d.electoralVotes.democrat || 0;
-          //     document.getElementById("modalRepublicanElectoral").textContent =
-          //       d.electoralVotes.republican || 0;
-          //     document.getElementById("stateModal").style.display = "block";
-          //   });
-
           // Draw state names with click event
-          buildChart
+          svg
             .selectAll("text")
             .data(stateCenters, (d) => d.abbr)
             .enter()
             .append("text")
-            .attr("x", (d) => {
-              if (
-                ["CT", "DE", "MD", "MA", "NJ", "RI", "VT", "NH", "HI"].includes(
-                  d.abbr
-                )
-              ) {
-                return d.centroid[0] + 70;
-              } else {
-                return d.centroid[0];
-              }
-            })
-            .attr("y", (d) => {
-              if (["CT", "DE", "MA", "NJ", "RI", "NH", "HI"].includes(d.abbr)) {
-                return d.centroid[1] + 20;
-              } else {
-                return d.centroid[1];
-              }
-            })
+            .attr("x", (d) => d.centroid[0])
+            .attr("y", (d) => d.centroid[1])
             .attr("text-anchor", "middle")
             .attr("dy", "0.35em")
             .text((d) => d.name)
@@ -465,32 +407,32 @@ d3.json("data.json").then(function (data) {
               // Show modal with state information
               document.getElementById("modalName").textContent = d.name;
               document.getElementById("modalDemocratPopular").textContent =
-                d.popularVotes.democrat || 0;
+                d.popularVotes?.democrat || 0;
               document.getElementById("modalRepublicanPopular").textContent =
-                d.popularVotes.republican || 0;
+                d.popularVotes?.republican || 0;
               document.getElementById("modalDemocratElectoral").textContent =
-                d.electoralVotes.democrat || 0;
+                d.electoralVotes?.democrat || 0;
               document.getElementById("modalRepublicanElectoral").textContent =
-                d.electoralVotes.republican || 0;
+                d.electoralVotes?.republican || 0;
               document.getElementById("stateModal").style.display = "block";
             });
 
-          // buildChart
-          //   .selectAll("text.coords")
-          //   .data(stateCenters, (d) => d.abbr)
-          //   .enter()
-          //   .append("text")
-          //   .attr("class", "coords")
-          //   .attr("x", (d) => d.centroid[0])
-          //   .attr("y", (d) => d.centroid[1] + 20)
-          //   .attr("text-anchor", "middle")
-          //   .attr("dy", "0.35em")
-          //   .text(
-          //     (d) =>
-          //       `(${Math.round(d.centroid[0])}, ${Math.round(d.centroid[1])})`
-          //   )
-          //   .style("font-size", "8px")
-          //   .style("fill", "#000");
+          svg
+            .selectAll("text.coords")
+            .data(stateCenters, (d) => d.abbr)
+            .enter()
+            .append("text")
+            .attr("class", "coords")
+            .attr("x", (d) => d.centroid[0])
+            .attr("y", (d) => d.centroid[1] + 20)
+            .attr("text-anchor", "middle")
+            .attr("dy", "0.35em")
+            .text(
+              (d) =>
+                `(${Math.round(d.centroid[0])}, ${Math.round(d.centroid[1])})`
+            )
+            .style("font-size", "8px")
+            .style("fill", "#000");
         })
         .catch((error) => {
           console.error("Error loading data.json:", error);
